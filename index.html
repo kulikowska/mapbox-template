@@ -1,0 +1,110 @@
+<head>
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.css' rel='stylesheet' />
+
+    <script src='data.js'></script>
+</head>
+
+<html>
+    <div id='map' style='width: 600px; height: 600px;'></div>
+</html>
+
+<script>
+    const newGeoJson = {
+      "type": "FeatureCollection",
+      "features": []
+    }
+
+    mapboxgl.accessToken = '' // Add key here; 
+    const map = new mapboxgl.Map({
+        container: 'map', // container ID
+        style: 'mapbox://styles/mapbox/streets-v11', // style URL
+        center: [-123.8818359375, 49.31438004800689], // starting position [lng, lat]
+        zoom: 6.5 // starting zoom
+    });
+
+    map.on('load', function () {
+        const allLayers = map.getStyle().layers;
+
+        // Remove all labels
+        allLayers.forEach(layer => {
+            if (layer.type === "symbol") {
+                map.removeLayer(layer.id);
+            }
+        });
+
+
+        // Create geoJSON for points
+        let pointsGeo = JSON.parse(JSON.stringify(newGeoJson));
+        locations.forEach(point => {
+            pointsGeo.features.push(
+                {
+                  type: "Feature",
+                  properties: {},
+                  geometry: {
+                    type: "Point",
+                    coordinates: [ point.Longitude, point.Latitude ]
+                  }
+                }
+            )
+        });
+
+        // Add points source and layer
+        map.addSource('points', {
+            type: 'geojson',
+            data: pointsGeo 
+        });
+
+        map.addLayer({
+            id: 'points-layer',
+            type: 'circle',
+            source: 'points',
+            layout: {},
+            paint: {
+                "circle-radius" : 3,
+                "circle-color" : "#9b1b1b"
+            }
+        });
+
+
+        // Create geoJSON for labels
+        let labelsGeo = JSON.parse(JSON.stringify(newGeoJson));
+        labels.forEach(label => {
+            labelsGeo.features.push(
+                {
+                  "type": "Feature",
+                  "properties": {
+                    "label" : label.label
+                  },
+                  "geometry": {
+                    "type": "Point",
+                    "coordinates": label.coords 
+                  }
+                }
+            )
+        });
+
+        // Add labels source and layer 
+        map.addSource("labels-source", { 
+            type: 'geojson', 
+            data: labelsGeo 
+        });
+
+        map.addLayer({
+            id: "data-labels",
+            type: "symbol",
+            source: "labels-source",
+            layout : {
+                "text-field" : "{label}",
+                "text-allow-overlap" : true,
+                "text-offset" : [0, 1.2],
+                "text-size" : 12
+            },
+            paint : {
+                "text-color" : "#000"
+            }
+        })
+    });
+
+    map.addControl(new mapboxgl.ScaleControl({position: 'bottom-right'}));
+</script>
